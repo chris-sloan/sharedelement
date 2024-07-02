@@ -39,25 +39,29 @@ import androidx.constraintlayout.compose.Dimension
 import androidx.constraintlayout.compose.Dimension.Companion.fillToConstraints
 import androidx.constraintlayout.compose.Visibility.Companion.Gone
 import androidx.constraintlayout.compose.layoutId
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import com.example.sharedelement.ui.theme.SharedElementTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        println("<<<<< - onCreate : ")
+        val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
+        windowInsetsController.systemBarsBehavior =
+            WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         setContent {
             SharedElementTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     MainScreen(
                         modifier = Modifier.padding(innerPadding),
                         onMaximised = { isMaximised, isTablet ->
-                            println("<<<<< - onMaximisedCallback : $isMaximised, $isTablet, ${resources.configuration.orientation}")
                             requestedOrientation = if (isMaximised) {
-                                println("<<<<< - Forcing Landscape : ")
+                                windowInsetsController.hide(WindowInsetsCompat.Type.systemBars())
                                 ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
                             } else {
-                                println("<<<<< - Forcing Unspecified : ")
+                                windowInsetsController.show(WindowInsetsCompat.Type.systemBars())
                                 if (isTablet) {
                                     ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
                                 } else {
@@ -69,22 +73,6 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-    }
-
-    override fun onConfigurationChanged(newConfig: Configuration) {
-        println("<<<<< - onConfigurationChanged : 1 - ${resources.configuration.orientation}, ${newConfig.orientation}")
-        super.onConfigurationChanged(newConfig)
-        println("<<<<< - onConfigurationChanged : 2 - ${resources.configuration.orientation}, ${newConfig.orientation}")
-    }
-
-    override fun onPause() {
-        super.onPause()
-        println("<<<<< - onPause : ")
-    }
-
-    override fun onResume() {
-        super.onResume()
-        println("<<<<< - onResume : ")
     }
 }
 
@@ -102,23 +90,18 @@ fun MainScreen(
     var selectedItemIndex by remember { mutableIntStateOf(0) }
 
     val maximise: (Boolean?) -> Unit = { max ->
-        println("<<<<< - MainScreen : maximise 1: Max:$max, isMax:$isMaximised")
         val shouldMax = max ?: !isMaximised
-        println("<<<<< - MainScreen : maximise 2: Max:$max, ShouldMax:$shouldMax")
-        onMaximised(shouldMax, isTablet)
         isMaximised = shouldMax
+        onMaximised(shouldMax, isTablet)
     }
 
     val itemSelectionCallback = { index: Int ->
-        println("<<<<< - MainScreen : itemSelection : $index")
         selectedItemIndex = index
         maximise(true)
     }
 
     val constraints = remember(isMaximised, orientation) {
-        println("<<<<< - MainScreen : constraints : $isMaximised, $orientation")
         if (isMaximised) {
-            println("<<<<< - ConstraintSet for MAXIMISED : ")
             ConstraintSet {
                 val hero = createRefFor("hero")
                 val list = createRefFor("list")
@@ -138,7 +121,6 @@ fun MainScreen(
                 }
             }
         } else if (isTablet && orientation == Configuration.ORIENTATION_LANDSCAPE) {
-            println("<<<<< - ConstraintSet for LANDSCAPE : ")
             ConstraintSet {
                 val hero = createRefFor("hero")
                 val list = createRefFor("list")
@@ -169,7 +151,6 @@ fun MainScreen(
                 }
             }
         } else {
-            println("<<<<< - MainScreen : constraint set for everything else - portrait")
             ConstraintSet {
                 val hero = createRefFor("hero")
                 val list = createRefFor("list")
@@ -192,7 +173,6 @@ fun MainScreen(
                     visibility = Gone
                 }
             }
-
         }
     }
     ConstraintLayout(
